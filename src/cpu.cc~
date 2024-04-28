@@ -1,0 +1,30 @@
+#include "cpu.h"
+
+#include <array>
+#include <algorithm>
+
+namespace nes {
+
+CPU::CPU(std::array<uint8_t, 65536> &memory) : memory_(memory) {
+  Reset();
+}
+
+CPU::~CPU() {
+
+}
+
+void CPU::Reset() {
+  a_ = x_ = y_ = p_ = 0;
+  s_ = memory_[0xFD];
+  pc_ = Read16bit(0xFFFC);
+
+  std::fill(memory_.begin(), memory_.end(), 0);
+}
+
+void CPU::Tick() {
+  [[maybe_unused]]
+  uint8_t opcode = Read8bit(pc_);
+  // Map opcode to function
+}
+
+}

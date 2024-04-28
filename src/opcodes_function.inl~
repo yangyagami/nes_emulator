@@ -1,0 +1,12 @@
+void CPU::Break(OPCODE &opcode) {
+  assert(opcode.name == "BRK" && opcode.address_mode == AddressMode::kNone
+         && opcode.circle == 2);
+  PushStack(pc_ >> 8);
+  PushStack(pc & 0xff);
+
+  PushStack(p_.all);
+
+  p_.interrupt = 1;
+
+  pc_ = Read8bit(0xfffe) | (Read8bit(0xffff) << 8);
+}
