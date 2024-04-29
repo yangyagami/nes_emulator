@@ -1,9 +1,9 @@
 void CPU::Break(OPCODE &opcode) {
   assert(opcode.name == "BRK" && opcode.address_mode == AddressMode::kNone
-         && opcode.circle == 7);
+         && opcode.cycles == 7);
 
   PushStack(pc_ >> 8);
-  PushStack(pc & 0xff);
+  PushStack(pc_ & 0xff);
 
   PushStack(p_.all);
 
@@ -14,7 +14,7 @@ void CPU::Break(OPCODE &opcode) {
 
 void CPU::BranchIfPositive(OPCODE &opcode) {
   assert(opcode.name == "BPL" && opcode.address_mode == AddressMode::kRelative
-         && opcode.circle == 2);
+         && opcode.cycles == 2);
 
   uint8_t relative_address = Read8bit(pc_);
 

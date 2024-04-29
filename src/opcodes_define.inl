@@ -249,9 +249,9 @@ std::map<uint8_t, OPCODE> opcodes_ =
 };
 
 #define NES_EMULATOR_OPCODES_DEFINE_FUNCTION_BIND(name, func) \
-    std::pair(name, std::bind(&func, std::placeholders::_1, this)
+  std::pair(name, std::bind(&func, this, std::placeholders::_1))
 
-std::map<std::string, std::function<void(OPCODE &)>> opcode_functions = {
+std::map<std::string, std::function<void(OPCODE &)>> opcode_functions_ = {
   NES_EMULATOR_OPCODES_DEFINE_FUNCTION_BIND("BRK", CPU::Break),
 };
 

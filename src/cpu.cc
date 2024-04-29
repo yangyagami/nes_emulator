@@ -2,6 +2,7 @@
 
 #include <array>
 #include <algorithm>
+#include <cassert>
 
 namespace nes {
 
@@ -14,8 +15,8 @@ CPU::~CPU() {
 }
 
 void CPU::Reset() {
-  a_ = x_ = y_ = p_ = 0;
-  s_ = memory_[0xFD];
+  a_ = x_ = y_ = p_.all = 0;
+  s_ = Read8bit(0xFD);
   pc_ = Read16bit(0xFFFC);
 
   std::fill(memory_.begin(), memory_.end(), 0);
@@ -31,12 +32,12 @@ void CPU::Tick() {
 
   OPCODE opcode_obj = opcodes_[opcode];
 
-  if (opcode_functions.find(opcode_obj.name) == opcode_functions.end()) {
+  if (opcode_functions_.find(opcode_obj.name) == opcode_functions_.end()) {
     // TODO(yangsiyu): Handle no such opcode's method.
     return;
   }
 
-  auto func = opcode_functions[opcode_obj.name];
+  auto func = opcode_functions_[opcode_obj.name];
 
   func(opcode_obj);
 

@@ -59,6 +59,12 @@ class CPU {
   void Reset();
 
   void Tick();
+
+  uint8_t a() { return a_; }
+  uint8_t x() { return x_; }
+  uint8_t y() { return y_; }
+  uint16_t pc() { return pc_; }
+  uint8_t s() { return s_; }
  private:
   inline void Write8bit(uint8_t value, uint16_t address) {
     memory_[address] = value;
@@ -75,8 +81,12 @@ class CPU {
   void PushStack(uint8_t value);
   uint8_t PopStack();
  private:
+  // @INSTRUCTIONS
   void Break(OPCODE &opcode);
   void BranchIfPositive(OPCODE &opcode);
+  void JumptoSubRoutine(OPCODE &opcode);
+
+  // @ADDRESS MODE
  private:
   uint8_t a_;
   uint8_t x_;
