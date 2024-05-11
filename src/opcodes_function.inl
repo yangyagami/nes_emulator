@@ -16,11 +16,9 @@ void CPU::BranchIfPositive(OPCODE &opcode) {
   assert(opcode.name == "BPL" && opcode.address_mode == AddressMode::kRelative
          && opcode.cycles == 2);
 
-  uint8_t relative_address = Read8bit(pc_);
-
   if (p_.negative == 0) {
-    uint16_t new_address = pc_ + relative_address;
-    bool page_crossed = (new_address & 0xff00) != (pc_ & 0xff00);
+    uint16_t new_address = RelativeAddressing();
+    bool page_crossed = PageCrossed(new_address);
     pc_ = new_address;
     opcode.cycles++;
     if (page_crossed) {
@@ -29,4 +27,9 @@ void CPU::BranchIfPositive(OPCODE &opcode) {
   } else {
     pc_++;
   }
+}
+
+void CPU::JumptoSubRoutine(OPCODE &opcode) {
+
+
 }

@@ -80,6 +80,10 @@ class CPU {
  private:
   void PushStack(uint8_t value);
   uint8_t PopStack();
+
+  bool PageCrossed(uint8_t address) {
+    return (address & 0xff00) != (pc_ & 0xff00);
+  }
  private:
   // @INSTRUCTIONS
   void Break(OPCODE &opcode);
@@ -87,7 +91,13 @@ class CPU {
   void JumptoSubRoutine(OPCODE &opcode);
 
   // @ADDRESS MODE
- private:
+  uint8_t RelativeAddressing() {
+    uint8_t relative_address = Read8bit(pc_);
+    uint16_t new_address = pc_ + relative_address;
+    return new_address;
+  }
+
+private:
   uint8_t a_;
   uint8_t x_;
   uint8_t y_;
