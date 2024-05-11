@@ -30,6 +30,6 @@ void CPU::BranchIfPositive(OPCODE &opcode) {
 }
 
 void CPU::JumptoSubRoutine(OPCODE &opcode) {
-
-
+  assert(opcode.name == "JSR" && opcode.address_mode == AddressMode::kAbsolute
+         && opcode.cycles == 6);
 }
