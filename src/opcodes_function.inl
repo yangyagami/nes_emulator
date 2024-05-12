@@ -17,13 +17,7 @@ void CPU::BranchIfPositive(OPCODE &opcode) {
          && opcode.cycles == 2);
 
   if (p_.negative == 0) {
-    uint16_t new_address = RelativeAddressing();
-    bool page_crossed = PageCrossed(new_address);
-    pc_ = new_address;
-    opcode.cycles++;
-    if (page_crossed) {
-      opcode.cycles++;
-    }
+    pc_ = Addressing(opcode.address_mode);
   } else {
     pc_++;
   }

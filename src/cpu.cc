@@ -6,7 +6,7 @@
 
 namespace nes {
 
-CPU::CPU(std::array<uint8_t, 65536> &memory) : memory_(memory) {
+CPU::CPU(std::array<uint8_t, 65536> &memory) : memory_(memory), cycles_(0) {
   Reset();
 }
 
@@ -23,6 +23,8 @@ void CPU::Reset() {
 }
 
 void CPU::Tick() {
+  cycles_ = 0;
+
   uint8_t opcode = Read8bit(pc_);
   // Map opcode to function
   if (opcodes_.find(opcode) == opcodes_.end()) {
@@ -41,7 +43,9 @@ void CPU::Tick() {
 
   func(opcode_obj);
 
-  while (opcode_obj.cycles-- > 0);
+  cycles_ += opcode_obj.cycles;
+
+  while (cycles_-- > 0);
 }
 
 void CPU::PushStack(uint8_t value) {

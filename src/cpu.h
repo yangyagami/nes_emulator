@@ -1,13 +1,16 @@
 #ifndef NES_EMULATOR_CPU_H_
 #define NES_EMULATOR_CPU_H_
 
+#include <cstdint>
 #include <stdint.h>
+#include <assert.h>
 
 #include <array>
 #include <string>
 #include <map>
 #include <utility>
 #include <functional>
+#include <format>
 
 /*
   ###Reference from nesdev.###
@@ -81,7 +84,7 @@ class CPU {
   void PushStack(uint8_t value);
   uint8_t PopStack();
 
-  bool PageCrossed(uint8_t address) {
+  bool PageCrossed(uint16_t address) {
     return (address & 0xff00) != (pc_ & 0xff00);
   }
  private:
@@ -91,10 +94,90 @@ class CPU {
   void JumptoSubRoutine(OPCODE &opcode);
 
   // @ADDRESS MODE
-  uint8_t RelativeAddressing() {
+  uint16_t Addressing(AddressMode address_mode) {
+    switch (address_mode) {
+      case AddressMode::kRelative: {
+        return RelativeAddressing();
+      }
+      case AddressMode::kAbsolute: {
+        return AbsoluteAddressing();
+      }
+      case AddressMode::kAbsoluteX: {
+        return AbsoluteXAddressing();
+      }
+      case AddressMode::kAbsoluteY: {
+        return AbsoluteYAddressing();
+      }
+      default: {
+        std::string err = std::format("No support address mode: {}",
+                                      static_cast<int>(address_mode));
+        assert(false && err.c_str());
+      }
+    }
+  }
+
+  uint16_t RelativeAddressing() {
     uint8_t relative_address = Read8bit(pc_);
     uint16_t new_address = pc_ + relative_address;
+    if (PageCrossed(new_address)) {
+      cycles_++;
+    }
     return new_address;
+  }
+
+  uint16_t ImmediateAddressing() {
+    return pc_ + 1;
+  }
+
+  uint16_t ZeroPageAddressing() {
+    return Read8bit(pc_ + 1);
+  }
+
+  uint16_t ZeroPageXAddressing() {
+    uint8_t tmp = Read8bit(pc_ + 1);
+    uint16_t ret = x_ + tmp;
+
+    return ret & 0x00ff;
+  }
+
+  uint16_t ZeroPageYAddressing() {
+    uint8_t tmp = Read8bit(pc_ + 1);
+    uint16_t ret = y_ + tmp;
+
+    return ret & 0x00ff;
+  }
+
+  uint16_t AbsoluteAddressing() {
+    uint16_t ret = Read8bit(pc_ + 1);
+    ret = (ret << 8) | Read8bit(pc_ + 2);
+
+    return ret;
+  }
+
+  uint16_t AbsoluteXAddressing() {
+    uint16_t ret = Read8bit(pc_ + 1);
+    ret = (ret << 8) | Read8bit(pc_ + 2);
+
+    ret += x_;
+
+    if (PageCrossed(ret)) {
+      cycles_++;
+    }
+
+    return ret;
+  }
+
+  uint16_t AbsoluteYAddressing() {
+    uint16_t ret = Read8bit(pc_ + 1);
+    ret = (ret << 8) | Read8bit(pc_ + 2);
+
+    ret += y_;
+
+    if (PageCrossed(ret)) {
+      cycles_++;
+    }
+
+    return ret;
   }
 
 private:
@@ -118,6 +201,8 @@ private:
   } p_;
 
   std::array<uint8_t, 65536> &memory_;
+
+  int cycles_;
 
 #include "opcodes_define.inl"
 };
