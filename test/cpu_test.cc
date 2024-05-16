@@ -1,14 +1,14 @@
-#include <algorithm>
+#include <stdio.h>
+
 #include <iostream>
 #include <array>
-#include <fstream>
-#include <istream>
-#include <sstream>
-#include <vector>
+#include <memory>
+#include <iostream>
 
 #include "raylib.h"
 
 #include "cpu.h"
+#include "cartridge.h"
 
 void DebugCPU(nes::CPU &cpu) {
   int offset = 10;
@@ -16,19 +16,22 @@ void DebugCPU(nes::CPU &cpu) {
   DrawText("Registers:", 10, offset, 20, BLACK);
 
   DrawText("A: ", 10, offset += 30, 20, BLACK);
-  DrawText(TextFormat("%u", cpu.a()), 10 + 50, offset, 20, BLACK);
+  DrawText(TextFormat("0x%02x", cpu.a()), 10 + 50, offset, 20, BLACK);
 
   DrawText("X: ", 10, offset += 30, 20, BLACK);
-  DrawText(TextFormat("%u", cpu.x()), 10 + 50, offset, 20, BLACK);
+  DrawText(TextFormat("0x%02x", cpu.x()), 10 + 50, offset, 20, BLACK);
 
   DrawText("Y: ", 10, offset += 30, 20, BLACK);
-  DrawText(TextFormat("%u", cpu.y()), 10 + 50, offset, 20, BLACK);
+  DrawText(TextFormat("0x%02x", cpu.y()), 10 + 50, offset, 20, BLACK);
 
   DrawText("PC: ", 10, offset += 30, 20, BLACK);
-  DrawText(TextFormat("%u", cpu.pc()), 10 + 50, offset, 20, BLACK);
+  DrawText(TextFormat("0x%02x", cpu.pc()), 10 + 50, offset, 20, BLACK);
 
   DrawText("SP: ", 10, offset += 30, 20, BLACK);
-  DrawText(TextFormat("%u", cpu.s()), 10 + 50, offset, 20, BLACK);
+  DrawText(TextFormat("0x%02x", cpu.s()), 10 + 50, offset, 20, BLACK);
+
+  DrawText("P: ", 10, offset += 30, 20, BLACK);
+  DrawText(TextFormat("0x%02x", cpu.p()), 10 + 50, offset, 20, BLACK);
 }
 
 void DebugMemory(const std::array<uint8_t, 65536> &memory, int start_pos = 0) {
@@ -45,7 +48,7 @@ void DebugMemory(const std::array<uint8_t, 65536> &memory, int start_pos = 0) {
       DrawText(TextFormat("%04x: ", i), x - 60, y, 20, BLACK);
     }
     count++;
-    DrawText(TextFormat("%02x", 0), x, y, 20, BLACK);
+    DrawText(TextFormat("%02x", memory[i]), x, y, 20, BLACK);
     x += 40;
     if ((count + 1) % 16 == 0) {
       x = start_x;
@@ -55,18 +58,6 @@ void DebugMemory(const std::array<uint8_t, 65536> &memory, int start_pos = 0) {
   }
 }
 
-std::vector<uint8_t> LoadRom(const std::string &rom_path) {
-  std::vector<uint8_t> ret;
-
-  std::ifstream rom(rom_path, std::ios::binary);
-  if (rom.is_open() == false) {
-    return ret;
-  }
-  ret = std::vector<uint8_t>((std::istreambuf_iterator<char>(rom)),
-                             std::istreambuf_iterator<char>());
-  return ret;
-}
-
 int main() {
   std::cout << "Begin cpu test" << std::endl;
 
@@ -74,30 +65,70 @@ int main() {
 
   nes::CPU cpu(memory);
 
+  cpu.OnPowerUp();
+  cpu.OnReset();
+
   InitWindow(1000, 600, "CPU test");
 
   SetTargetFPS(60);
 
-  std::vector<uint8_t> rom = LoadRom("registers.nes");
-
-  if (rom.size() <= 0 ||
-      std::string(rom.begin(), rom.begin() + 4) != "NES\x1a") {
-    // TODO(yangsiyu): Invalid rom file.
+  std::shared_ptr<nes::Cartridge> cartridge = nes::Cartridge::LoadRom("Super Mario Bros (PC10).nes");
+  if (cartridge == nullptr) {
+    std::cerr << "Load cartridge failed!" << std::endl;
     return 1;
   }
 
-  while (!WindowShouldClose()) {
-    if (IsKeyPressed(KEY_D)) {
-      cpu.Tick();
-    }
+    std::copy(cartridge->program_rom_data().begin(),
+              cartridge->program_rom_data().end(), memory.begin() + 0x8000);
 
-    BeginDrawing();
+    while (!WindowShouldClose()) {
+      if (IsKeyPressed(KEY_D)) {
+        cpu.Tick();
+      }
 
-    ClearBackground(RAYWHITE);
+      BeginDrawing();
 
-    DebugCPU(cpu);
+      ClearBackground(RAYWHITE);
 
-    DebugMemory(memory);
+      int y = 0;
+      for (size_t j = 0; j < 16 * 30; j += 16) {
+        for (size_t i = j; i < j + 8; i++) {
+        uint8_t plane0 = cartridge->chr_rom_data()[i];
+        uint8_t plane1 = cartridge->chr_rom_data()[i + 8];
+
+        int size = 5;
+
+        if (i % 8 == 0) {
+          y = (j / (16 * 16)) * size * 8;
+          std::cout << y << std::endl;
+        }
+
+        for (int bit_pos = 7; bit_pos >= 0; bit_pos--) {
+          uint8_t plane0_cur_bit = (plane0 & (1 << bit_pos)) >> bit_pos;
+          uint8_t plane1_cur_bit = (plane1 & (1 << bit_pos)) >> bit_pos;
+          uint8_t color_idx = plane0_cur_bit + plane1_cur_bit * 2;
+          auto color = BLACK;
+          switch (color_idx) {
+            case 1: {
+              color = DARKBLUE;
+              break;
+            }
+            case 2: {
+              color = RED;
+              break;
+            }
+            case 3: {
+              color = WHITE;
+              break;
+            }
+          }
+          DrawRectangle((j / 16) * 8 * size + (7 - bit_pos) * size, y, size, size, color);
+      }
+      y += size;
+        }}
+
+    // DebugCPU(cpu);
+    // DebugMemory(memory, 0x8000);
 
     EndDrawing();
   }
@@ -105,4 +136,4 @@ int main() {
   CloseWindow();
 
   return 0;
-}
+  }

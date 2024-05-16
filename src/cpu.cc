@@ -7,17 +7,21 @@
 namespace nes {
 
 CPU::CPU(std::array<uint8_t, 65536> &memory) : memory_(memory), cycles_(0) {
-  Reset();
+  OnPowerUp();
 }
 
-CPU::~CPU() {
+CPU::~CPU() {}
 
+void CPU::OnPowerUp() {
+  a_ = x_ = y_ = 0;
+  p_ = 0x34;
+  s_ = 0xFD;
 }
 
-void CPU::Reset() {
-  a_ = x_ = y_ = p_.all = 0;
-  s_ = Read8bit(0xFD);
-  pc_ = Read16bit(0xFFFC);
+void CPU::OnReset() {
+  a_ = x_ = y_ = 0;
+  SetStatusFlag(StatusFlags::kInterrupt_disable, true);
+  s_ -= 3;
 
   std::fill(memory_.begin(), memory_.end(), 0);
 }
