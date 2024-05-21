@@ -254,6 +254,11 @@ std::map<uint8_t, OPCODE> opcodes_ =
 std::map<std::string, std::function<void(OPCODE &)>> opcode_functions_ = {
   // Offical
   NES_EMULATOR_OPCODES_DEFINE_FUNCTION_BIND("BRK", CPU::Break),
+  NES_EMULATOR_OPCODES_DEFINE_FUNCTION_BIND("SEI", CPU::SetInterruptDisable),
+  NES_EMULATOR_OPCODES_DEFINE_FUNCTION_BIND("CLD", CPU::ClearDecimal),
+  NES_EMULATOR_OPCODES_DEFINE_FUNCTION_BIND("LDA", CPU::LoadToAccumulator),
+  NES_EMULATOR_OPCODES_DEFINE_FUNCTION_BIND("BPL", CPU::BranchIfPositive),
+  NES_EMULATOR_OPCODES_DEFINE_FUNCTION_BIND("STA", CPU::StoreFromAccumulator),
 };
 
 #undef NES_EMULATOR_OPCODES_DEFINE_FUNCTION_BIND

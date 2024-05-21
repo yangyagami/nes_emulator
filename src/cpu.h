@@ -12,6 +12,8 @@
 #include <string>
 #include <utility>
 
+#include "utils.h"
+
 /*
   ###Reference from nesdev.###
 
@@ -62,7 +64,7 @@ class CPU {
   enum class StatusFlags {
     kCarry = 0,             // 进位标志位
     kZero,              // 零标志位
-    kInterrupt_disable, // 中断禁止标志位
+    kInterruptDisable, // 中断禁止标志位
     kDecimal,           // 十进制模式标志位
     kB,                 // 未使用的位, B FLAG
     kNone,              // 未使用的位
@@ -81,6 +83,9 @@ class CPU {
 
   void OnPowerUp();
   void OnReset();
+  void OnCartridgeInsert() {
+    pc_ = 0x8000;
+  }
 
   void Tick();
 
@@ -122,35 +127,42 @@ class CPU {
 
  private:
   // @INSTRUCTIONS
-  void Break(OPCODE &opcode);
-  void BranchIfPositive(OPCODE &opcode);
-  void JumptoSubRoutine(OPCODE &opcode);
+  void Break(const OPCODE &opcode);
+  void BranchIfPositive(const OPCODE &opcode);
+  void JumptoSubRoutine(const OPCODE &opcode);
+  void SetInterruptDisable(const OPCODE &opcode);
+  void ClearDecimal(const OPCODE &opcode);
+  void LoadToAccumulator(const OPCODE &opcode);
+  void StoreFromAccumulator(const OPCODE &opcode);
+  void AddWithCarry(const OPCODE &opcode);
 
   // @ADDRESS MODE
   uint16_t Addressing(AddressMode address_mode) {
     switch (address_mode) {
-    case AddressMode::kRelative: {
-      return RelativeAddressing();
-    }
-    case AddressMode::kAbsolute: {
-      return AbsoluteAddressing();
-    }
-    case AddressMode::kAbsoluteX: {
-      return AbsoluteXAddressing();
-    }
-    case AddressMode::kAbsoluteY: {
-      return AbsoluteYAddressing();
-    }
-    default: {
-      std::string err = std::format("No support address mode: {}",
-                                    static_cast<int>(address_mode));
-      assert(false && err.c_str());
-    }
+      case AddressMode::kRelative: {
+        return RelativeAddressing();
+      }
+      case AddressMode::kAbsolute: {
+        return AbsoluteAddressing();
+      }
+      case AddressMode::kAbsoluteX: {
+        return AbsoluteXAddressing();
+      }
+      case AddressMode::kAbsoluteY: {
+        return AbsoluteYAddressing();
+      }
+      case AddressMode::kImmediate: {
+        return ImmediateAddressing();
+      }
+      default: {
+        NES_ASSERT(false, std::format("No support address mode: {}",
+                                      static_cast<int>(address_mode)));
+      }
     }
   }
 
   uint16_t RelativeAddressing() {
-    uint8_t relative_address = Read8bit(pc_);
+    uint8_t relative_address = Read8bit(pc_ + 1);
     uint16_t new_address = pc_ + relative_address;
     if (PageCrossed(new_address)) {
       cycles_++;

@@ -1,8 +1,11 @@
 #include "cpu.h"
 
+#include <iostream>
 #include <array>
 #include <algorithm>
 #include <cassert>
+
+#include "utils.h"
 
 namespace nes {
 
@@ -20,7 +23,7 @@ void CPU::OnPowerUp() {
 
 void CPU::OnReset() {
   a_ = x_ = y_ = 0;
-  SetStatusFlag(StatusFlags::kInterrupt_disable, true);
+  SetStatusFlag(StatusFlags::kInterruptDisable, true);
   s_ -= 3;
 
   std::fill(memory_.begin(), memory_.end(), 0);
@@ -31,17 +34,13 @@ void CPU::Tick() {
 
   uint8_t opcode = Read8bit(pc_);
   // Map opcode to function
-  if (opcodes_.find(opcode) == opcodes_.end()) {
-    // TODO(yangsiyu): Handle no such opcode.
-    return;
-  }
+  NES_ASSERT(opcodes_.find(opcode) != opcodes_.end(),
+             std::format("No such opcode: {:#x}", opcode));
 
   OPCODE opcode_obj = opcodes_[opcode];
 
-  if (opcode_functions_.find(opcode_obj.name) == opcode_functions_.end()) {
-    // TODO(yangsiyu): Handle no such opcode's method.
-    return;
-  }
+  NES_ASSERT(opcode_functions_.find(opcode_obj.name) != opcode_functions_.end(),
+             std::format("No implementation opcode: {}", opcode_obj.name));
 
   auto func = opcode_functions_[opcode_obj.name];
 
