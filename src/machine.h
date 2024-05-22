@@ -1,3 +1,5 @@
+// Copyright (c) 2023 杨思宇. All rights reserved.
+
 #include "cpu.h"
 
 namespace machine {
@@ -12,4 +14,4 @@ class Machine {
   CPU cpu_;
 };
 
-}
+}  // namespace machine

@@ -1,3 +1,5 @@
+// Copyright (c) 2023 杨思宇. All rights reserved.
+
 #ifndef NES_EMULATOR_CARTRIDGE_H_
 #define NES_EMULATOR_CARTRIDGE_H_
 
@@ -14,7 +16,7 @@ class Cartridge {
 
   const std::vector<uint8_t> &program_rom_data() { return program_rom_data_; }
   const std::vector<uint8_t> &chr_rom_data() { return chr_rom_data_; }
-private:
+ private:
   union {
     struct {
       uint8_t nametable_arrangement : 1;
@@ -68,6 +70,6 @@ bits of the mapper number or simply refuse to load the ROM.
   std::vector<uint8_t> chr_rom_data_;
 };
 
-}
+}  // namespace nes
 
 #endif  // NES_EMULATOR_CARTRIDGE_H_

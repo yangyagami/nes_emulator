@@ -1,3 +1,5 @@
+// Copyright (c) 2023 杨思宇. All rights reserved.
+
 #ifndef NES_EMULATOR_UTILS_H_
 #define NES_EMULATOR_UTILS_H_
 

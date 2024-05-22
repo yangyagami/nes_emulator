@@ -1,8 +1,9 @@
+// Copyright (c) 2023 杨思宇. All rights reserved.
+
 #ifndef NES_EMULATOR_CPU_H_
 #define NES_EMULATOR_CPU_H_
 
 #include <assert.h>
-#include <cstdint>
 #include <stdint.h>
 
 #include <array>
@@ -63,13 +64,13 @@ class CPU {
   };
   enum class StatusFlags {
     kCarry = 0,             // 进位标志位
-    kZero,              // 零标志位
-    kInterruptDisable, // 中断禁止标志位
-    kDecimal,           // 十进制模式标志位
-    kB,                 // 未使用的位, B FLAG
-    kNone,              // 未使用的位
-    kOverflow,          // 溢出标志位
-    kNegative,          // 负数标志位
+    kZero,                  // 零标志位
+    kInterruptDisable,      // 中断禁止标志位
+    kDecimal,               // 十进制模式标志位
+    kB,                     // 未使用的位, B FLAG
+    kNone,                  // 未使用的位
+    kOverflow,              // 溢出标志位
+    kNegative,              // 负数标志位
   };
 
   struct OPCODE {
@@ -78,7 +79,7 @@ class CPU {
     uint8_t cycles;
   };
 
-  CPU(std::array<uint8_t, 65536> &memory);
+  explicit CPU(std::array<uint8_t, 65536> &memory);
   ~CPU();
 
   void OnPowerUp();
@@ -125,6 +126,28 @@ class CPU {
     return (address & 0xff00) != (pc_ & 0xff00);
   }
 
+  void NextInstruction(AddressMode address_mode) {
+    switch (address_mode) {
+      case AddressMode::kNone: {
+        pc_++;
+        break;
+      }
+      case AddressMode::kAbsolute: {
+        pc_ += 3;
+        break;
+      }
+      case AddressMode::kImmediate: {
+        pc_ += 2;
+        break;
+      }
+      default: {
+        NES_ASSERT(false,
+                   std::format("No implementation address mode for LDA: {}",
+                               static_cast<int>(address_mode)));
+      }
+    }
+  }
+
  private:
   // @INSTRUCTIONS
   void Break(const OPCODE &opcode);
@@ -134,7 +157,9 @@ class CPU {
   void ClearDecimal(const OPCODE &opcode);
   void LoadToAccumulator(const OPCODE &opcode);
   void StoreFromAccumulator(const OPCODE &opcode);
+  void LoadToX(const OPCODE &opcode);
   void AddWithCarry(const OPCODE &opcode);
+  void TransXToStackPointer(const OPCODE &opcode);
 
   // @ADDRESS MODE
   uint16_t Addressing(AddressMode address_mode) {
@@ -162,8 +187,9 @@ class CPU {
   }
 
   uint16_t RelativeAddressing() {
-    uint8_t relative_address = Read8bit(pc_ + 1);
-    uint16_t new_address = pc_ + relative_address;
+    int8_t relative_address = Read8bit(pc_ + 1);
+    // Skip current opcode.
+    uint16_t new_address = pc_ + 2 + relative_address;
     if (PageCrossed(new_address)) {
       cycles_++;
     }
@@ -236,6 +262,6 @@ class CPU {
 #include "opcodes_define.inl"
 };
 
-} // namespace nes
+}  // namespace nes
 
-#endif // NES_EMULATOR_CPU_H_
+#endif  // NES_EMULATOR_CPU_H_
