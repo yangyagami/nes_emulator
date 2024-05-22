@@ -1,8 +1,11 @@
 // Copyright (c) 2023 杨思宇. All rights reserved.
 
+#ifndef NES_EMULATOR_MACHINE_H_
+#define NES_EMULATOR_MACHINE_H_
+
 #include "cpu.h"
 
-namespace machine {
+namespace nes {
 
 class Machine {
  public:
@@ -14,4 +17,6 @@ class Machine {
   CPU cpu_;
 };
 
-}  // namespace machine
+}  // namespace nes
+
+#endif  // NES_EMULATOR_MACHINE_H_
