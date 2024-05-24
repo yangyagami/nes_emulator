@@ -16,7 +16,16 @@ target_include_directories(cpu_test PRIVATE
 
 target_link_directories(cpu_test PRIVATE
   3rdparty/raylib-5.0_linux_amd64/lib)
-target_link_libraries(cpu_test raylib)
+target_link_libraries(cpu_test raylib -fsanitize=address)
+
+add_executable(ppu_test test/ppu_test.cc)
+target_include_directories(ppu_test PRIVATE
+  src
+  3rdparty/raylib-5.0_linux_amd64/include)
+
+target_link_directories(ppu_test PRIVATE
+  3rdparty/raylib-5.0_linux_amd64/lib)
+target_link_libraries(ppu_test raylib -fsanitize=address)
 
 # 添加可选的库文件搜索路径
 # link_directories(lib)
