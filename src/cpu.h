@@ -3,7 +3,6 @@
 #ifndef NES_EMULATOR_CPU_H_
 #define NES_EMULATOR_CPU_H_
 
-#include <assert.h>
 #include <stdint.h>
 
 #include <array>
@@ -11,8 +10,10 @@
 #include <functional>
 #include <map>
 #include <string>
+#include <type_traits>
 #include <utility>
 
+#include "ppu.h"
 #include "utils.h"
 
 /*
@@ -62,16 +63,6 @@ class CPU {
     kIndirectZeroY,
     kRelative,
   };
-  enum class StatusFlags {
-    kCarry = 0,             // 进位标志位
-    kZero,                  // 零标志位
-    kInterruptDisable,      // 中断禁止标志位
-    kDecimal,               // 十进制模式标志位
-    kB,                     // 未使用的位, B FLAG
-    kNone,                  // 未使用的位
-    kOverflow,              // 溢出标志位
-    kNegative,              // 负数标志位
-  };
 
   struct OPCODE {
     std::string name;
@@ -79,7 +70,8 @@ class CPU {
     uint8_t cycles;
   };
 
-  explicit CPU(std::array<uint8_t, 65536> &memory);
+  explicit CPU(std::array<uint8_t, 65536> &memory,
+               std::function<uint8_t(PPU::Registers, bool)> ppu_access);
   ~CPU();
 
   void OnPowerUp();
@@ -95,24 +87,32 @@ class CPU {
   uint8_t y() { return y_; }
   uint16_t pc() { return pc_; }
   uint8_t s() { return s_; }
-  uint8_t p() { return p_; }
-
-  void SetStatusFlag(StatusFlags flag, bool v) {
-    uint8_t mask = (1 << static_cast<uint8_t>(flag));
-    p_ = (p_ & ~mask) | (static_cast<uint8_t>(v) << static_cast<uint8_t>(flag));
-  }
-
-  bool GetStatusFlag(StatusFlags flag) {
-    uint8_t mask = (1 << static_cast<uint8_t>(flag));
-    return static_cast<bool>((p_ & mask));
-  }
 
  private:
   inline void Write8bit(uint8_t value, uint16_t address) {
     memory_[address] = value;
   }
 
-  inline uint8_t Read8bit(uint16_t address) { return memory_[address]; }
+  uint8_t HandlePPURead(uint16_t address) {
+    switch (address) {
+      case 0x2002: { // PPUSTATUS
+        return ppu_access_(PPU::Registers::kPPUSTATUS, false);
+      }
+      default: {
+        std::string msg =
+            std::format("Not implementation ppu read address: {}", address);
+        NES_ASSERT(false, msg);
+      }
+    }
+  }
+
+  uint8_t Read8bit(uint16_t address) {
+    if (address >= 0x2000 && address <= 0x2007) {
+      // Read ppu registers.
+      return HandlePPURead(address);
+    }
+    return memory_[address];
+  }
 
   inline uint16_t Read16bit(uint16_t address) {
     return (memory_[address + 1] << 8) | memory_[address];
@@ -132,17 +132,20 @@ class CPU {
         pc_++;
         break;
       }
+      case AddressMode::kAbsoluteX:
+      case AddressMode::kAbsoluteY:
       case AddressMode::kAbsolute: {
         pc_ += 3;
         break;
       }
-      case AddressMode::kImmediate: {
+      case AddressMode::kImmediate:
+      case AddressMode::kRelative: {
         pc_ += 2;
         break;
       }
       default: {
         NES_ASSERT(false,
-                   std::format("No implementation address mode for LDA: {}",
+                   std::format("No implementation address mode for NextInstruction: {}",
                                static_cast<int>(address_mode)));
       }
     }
@@ -158,6 +161,7 @@ class CPU {
   void LoadToAccumulator(const OPCODE &opcode);
   void StoreFromAccumulator(const OPCODE &opcode);
   void LoadToX(const OPCODE &opcode);
+  void LoadToY(const OPCODE &opcode);
   void AddWithCarry(const OPCODE &opcode);
   void TransXToStackPointer(const OPCODE &opcode);
 
@@ -215,15 +219,15 @@ class CPU {
   }
 
   uint16_t AbsoluteAddressing() {
-    uint16_t ret = Read8bit(pc_ + 1);
-    ret = (ret << 8) | Read8bit(pc_ + 2);
+    uint16_t ret = Read8bit(pc_ + 2);
+    ret = (ret << 8) | Read8bit(pc_ + 1);
 
     return ret;
   }
 
   uint16_t AbsoluteXAddressing() {
-    uint16_t ret = Read8bit(pc_ + 1);
-    ret = (ret << 8) | Read8bit(pc_ + 2);
+    uint16_t ret = Read8bit(pc_ + 2);
+    ret = (ret << 8) | Read8bit(pc_ + 1);
 
     ret += x_;
 
@@ -235,8 +239,8 @@ class CPU {
   }
 
   uint16_t AbsoluteYAddressing() {
-    uint16_t ret = Read8bit(pc_ + 1);
-    ret = (ret << 8) | Read8bit(pc_ + 2);
+    uint16_t ret = Read8bit(pc_ + 2);
+    ret = (ret << 8) | Read8bit(pc_ + 1);
 
     ret += y_;
 
@@ -247,17 +251,33 @@ class CPU {
     return ret;
   }
 
+ public:
+   union {
+     struct {
+       uint8_t carry             : 1;  // 进位标志位
+       uint8_t zero              : 1;  // 零标志位
+       uint8_t interrupt_disable : 1;  // 中断禁止标志位
+       uint8_t decimal           : 1;  // 十进制模式标志位
+       uint8_t b                 : 1;  // 未使用的位 : 1; B FLAG
+       uint8_t none              : 1;  // 未使用的位
+       uint8_t overflow          : 1;  // 溢出标志位
+       uint8_t negative          : 1;  // 负数标志位
+     };
+     uint8_t raw;
+   } p;
+
  private:
   uint8_t a_;
   uint8_t x_;
   uint8_t y_;
   uint16_t pc_;
   uint8_t s_;
-  uint8_t p_;
 
   std::array<uint8_t, 65536> &memory_;
 
   int cycles_;
+
+  std::function<uint8_t(PPU::Registers, bool)> ppu_access_;
 
 #include "opcodes_define.inl"
 };
