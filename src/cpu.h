@@ -138,6 +138,7 @@ class CPU {
         pc_ += 3;
         break;
       }
+      case AddressMode::kZeroPage:
       case AddressMode::kImmediate:
       case AddressMode::kRelative: {
         pc_ += 2;
@@ -153,18 +154,34 @@ class CPU {
 
  private:
   // @INSTRUCTIONS
+  // void Return(const OPCODE &opcode);
   void Break(const OPCODE &opcode);
-  void BranchIfPositive(const OPCODE &opcode);
   void JumptoSubRoutine(const OPCODE &opcode);
   void SetInterruptDisable(const OPCODE &opcode);
   void ClearDecimal(const OPCODE &opcode);
-  void LoadToAccumulator(const OPCODE &opcode);
-  void StoreFromAccumulator(const OPCODE &opcode);
-  void LoadToX(const OPCODE &opcode);
-  void LoadToY(const OPCODE &opcode);
   void AddWithCarry(const OPCODE &opcode);
   void TransXToStackPointer(const OPCODE &opcode);
+
   void Compare(const OPCODE &opcode);
+  void CompareX(const OPCODE &opcode);
+  void CompareY(const OPCODE &opcode);
+
+  void LoadToAccumulator(const OPCODE &opcode);
+  void LoadToX(const OPCODE &opcode);
+  void LoadToY(const OPCODE &opcode);
+
+  void StoreFromAccumulator(const OPCODE &opcode);
+  void StoreFromX(const OPCODE &opcode);
+  // void StoreFromY(const OPCODE &opcode);
+
+  void BranchIfPositive(const OPCODE &opcode);
+  void BranchWhenCarryFlagSet(const OPCODE &opcode);
+  void BranchIfNotEqual(const OPCODE &opcode);
+
+  void DecrementX(const OPCODE &opcode);
+  void DecrementY(const OPCODE &opcode);
+  void IncrementX(const OPCODE &opcode);
+  void IncrementY(const OPCODE &opcode);
 
   // @ADDRESS MODE
   uint16_t Addressing(AddressMode address_mode) {
@@ -183,6 +200,9 @@ class CPU {
       }
       case AddressMode::kImmediate: {
         return ImmediateAddressing();
+      }
+      case AddressMode::kZeroPage: {
+        return ZeroPageAddressing();
       }
       default: {
         NES_ASSERT(false, std::format("No support address mode: {}",

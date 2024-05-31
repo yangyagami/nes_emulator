@@ -81,7 +81,7 @@ int main() {
   SetTargetFPS(60);
 
   std::shared_ptr<nes::Cartridge> cartridge =
-      nes::Cartridge::LoadRom("Super Mario Bros. (World).nes");
+      nes::Cartridge::LoadRom("Super Mario Bros (PC10).nes");
   if (cartridge == nullptr) {
     std::cerr << "Load cartridge failed!" << std::endl;
     return 1;
@@ -91,12 +91,12 @@ int main() {
             cartridge->program_rom_data().end(), memory.begin() + 0x8000);
 
   while (!WindowShouldClose()) {
-    if (IsKeyPressed(KEY_D)) {
+    // if (IsKeyPressed(KEY_D)) {
       for (int i = 0; i < 3; i++) {
         ppu.Tick();
       }
       cpu.Tick();
-    }
+      // }
 
     BeginDrawing();
 
