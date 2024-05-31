@@ -133,4 +133,14 @@ void CPU::TransXToStackPointer(const OPCODE &opcode) {
   NextInstruction(opcode.address_mode);
 }
 
+void CPU::Compare(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "CMP" &&
+                         opcode.address_mode != AddressMode::kNone,
+                         "Compare");
+
+  uint16_t new_address = Addressing(opcode.address_mode);
+  uint8_t v = Read8bit(new_address);
+  int16_t result = a_ - v;
+}
+
 #undef NES_INSTRUCTION_ASSERT

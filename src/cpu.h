@@ -160,6 +160,7 @@ class CPU {
   void LoadToX(const OPCODE &opcode);
   void AddWithCarry(const OPCODE &opcode);
   void TransXToStackPointer(const OPCODE &opcode);
+  void Compare(const OPCODE &opcode);
 
   // @ADDRESS MODE
   uint16_t Addressing(AddressMode address_mode) {
