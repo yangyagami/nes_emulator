@@ -3,11 +3,13 @@
 #include <array>
 #include <iostream>
 #include <memory>
+#include <functional>
 
 #include "raylib.h"
 
 #include "cartridge.h"
 #include "cpu.h"
+#include "ppu.h"
 
 void DebugCPU(nes::CPU &cpu) {
   int offset = 10;
@@ -30,7 +32,11 @@ void DebugCPU(nes::CPU &cpu) {
   DrawText(TextFormat("0x%02x", cpu.s()), 10 + 50, offset, 20, BLACK);
 
   DrawText("P: ", 10, offset += 30, 20, BLACK);
-  DrawText(TextFormat("0x%02x", cpu.p()), 10 + 50, offset, 20, BLACK);
+  DrawText(TextFormat("0x%02x N:%d O:%d - B:%d D:%d I:%d Z:%d C:%d",
+                      cpu.p, cpu.p.negative, cpu.p.overflow,
+                      cpu.p.b, cpu.p.decimal, cpu.p.interrupt_disable,
+                      cpu.p.zero, cpu.p.carry),
+           10 + 50, offset, 20, BLACK);
 }
 
 void DebugMemory(const std::array<uint8_t, 65536> &memory, int start_pos = 0) {
@@ -62,7 +68,9 @@ int main() {
 
   std::array<uint8_t, 65536> memory = {0};
 
-  nes::CPU cpu(memory);
+  nes::PPU ppu;
+  nes::CPU cpu(memory, std::bind(&nes::PPU::Access, &ppu,
+                                 std::placeholders::_1, std::placeholders::_2));
 
   cpu.OnPowerUp();
   cpu.OnReset();
@@ -73,7 +81,7 @@ int main() {
   SetTargetFPS(60);
 
   std::shared_ptr<nes::Cartridge> cartridge =
-      nes::Cartridge::LoadRom("Super Mario Bros (PC10).nes");
+      nes::Cartridge::LoadRom("Super Mario Bros. (World).nes");
   if (cartridge == nullptr) {
     std::cerr << "Load cartridge failed!" << std::endl;
     return 1;
@@ -84,6 +92,9 @@ int main() {
 
   while (!WindowShouldClose()) {
     if (IsKeyPressed(KEY_D)) {
+      for (int i = 0; i < 3; i++) {
+        ppu.Tick();
+      }
       cpu.Tick();
     }
 

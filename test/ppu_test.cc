@@ -1,3 +1,6 @@
+#include <format>
+#include <iostream>
+
 #include "raylib.h"
 
 #include "ppu.h"

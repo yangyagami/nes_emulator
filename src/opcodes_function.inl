@@ -13,9 +13,9 @@ void CPU::Break(const OPCODE &opcode) {
   PushStack(pc_ >> 8);
   PushStack(pc_ & 0xff);
 
-  PushStack(p_);
+  PushStack(p.raw);
 
-  SetStatusFlag(StatusFlags::kInterruptDisable, true);
+  p.interrupt_disable = 1;
 
   pc_ = Read8bit(0xfffe) | (Read8bit(0xffff) << 8);
 }
@@ -25,7 +25,7 @@ void CPU::BranchIfPositive(const OPCODE &opcode) {
                          opcode.address_mode == AddressMode::kRelative &&
                          opcode.cycles == 2, "BranchIfPositive");
 
-  if (GetStatusFlag(StatusFlags::kNegative) == false) {
+  if (p.negative == 0) {
     pc_ = Addressing(opcode.address_mode);
   } else {
     NextInstruction(opcode.address_mode);
@@ -43,7 +43,7 @@ void CPU::SetInterruptDisable(const OPCODE &opcode) {
                          opcode.address_mode == AddressMode::kNone &&
                          opcode.cycles == 2, "SetInterruptDisable");
 
-  SetStatusFlag(StatusFlags::kInterruptDisable, true);
+  p.interrupt_disable = 1;
 
   NextInstruction(opcode.address_mode);
 }
@@ -53,7 +53,7 @@ void CPU::ClearDecimal(const OPCODE &opcode) {
                          opcode.address_mode == AddressMode::kNone &&
                          opcode.cycles == 2, "ClearDecimal");
 
-  SetStatusFlag(StatusFlags::kDecimal, false);
+  p.decimal = 0;
 
   NextInstruction(opcode.address_mode);
 }
@@ -66,10 +66,10 @@ void CPU::LoadToAccumulator(const OPCODE &opcode) {
   uint16_t new_address = Addressing(opcode.address_mode);
   a_ = Read8bit(new_address);
 
-  if (((a_ & 0x8000) >> 7) == 1) {
-    SetStatusFlag(StatusFlags::kNegative, true);
+  if (((a_ & 0x80) >> 7) == 1) {
+    p.negative = 1;
   } else if (a_ == 0) {
-    SetStatusFlag(StatusFlags::kZero, true);
+    p.zero = 1;
   }
 
   NextInstruction(opcode.address_mode);
@@ -94,10 +94,27 @@ void CPU::LoadToX(const OPCODE &opcode) {
   uint16_t new_address = Addressing(opcode.address_mode);
   x_ = Read8bit(new_address);
 
-  if (((x_ & 0x8000) >> 7) == 1) {
-    SetStatusFlag(StatusFlags::kNegative, true);
+  if (((x_ & 0x80) >> 7) == 1) {
+    p.negative = 1;
   } else if (a_ == 0) {
-    SetStatusFlag(StatusFlags::kZero, true);
+    p.zero = 1;
+  }
+
+  NextInstruction(opcode.address_mode);
+}
+
+void CPU::LoadToY(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "LDY" &&
+                         opcode.address_mode != AddressMode::kNone,
+                         "LoadToY");
+
+  uint16_t new_address = Addressing(opcode.address_mode);
+  y_ = Read8bit(new_address);
+
+  if (((y_ & 0x80) >> 7) == 1) {
+    p.negative = 1;
+  } else if (a_ == 0) {
+    p.zero = 1;
   }
 
   NextInstruction(opcode.address_mode);
@@ -112,12 +129,12 @@ void CPU::AddWithCarry(const OPCODE &opcode) {
   uint8_t tmp = a_;
   a_ += Read8bit(new_address);
 
-  if (((a_ & 0x8000) >> 7) == 1) {
-    SetStatusFlag(StatusFlags::kNegative, true);
+  if (((a_ & 0x80) >> 7) == 1) {
+    p.negative = 1;
   } else if (a_ == 0) {
-    SetStatusFlag(StatusFlags::kZero, true);
+    p.zero = 1;
   } else if (a_ < tmp) {
-    SetStatusFlag(StatusFlags::kCarry, true);
+    p.carry = 1;
   }
 
   NextInstruction(opcode.address_mode);
