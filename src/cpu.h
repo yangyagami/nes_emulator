@@ -154,7 +154,7 @@ class CPU {
 
  private:
   // @INSTRUCTIONS
-  // void Return(const OPCODE &opcode);
+  void Return(const OPCODE &opcode);
   void Break(const OPCODE &opcode);
   void JumptoSubRoutine(const OPCODE &opcode);
   void SetInterruptDisable(const OPCODE &opcode);

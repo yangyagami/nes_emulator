@@ -5,6 +5,14 @@
     NES_ASSERT((condition), std::format("Invalid " #instruction_name " instruction, opcode name: {}, address mode: {}, cycles: {}", opcode.name, static_cast<int>(opcode.address_mode), opcode.cycles)); \
   } while (false)
 
+void CPU::Return(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "RTS" &&
+                         opcode.address_mode == AddressMode::kNone &&
+                         opcode.cycles == 6, "Return");
+  pc_ = PopStack();
+  pc_ |= PopStack() << 8;
+}
+
 void CPU::Break(const OPCODE &opcode) {
   NES_INSTRUCTION_ASSERT(opcode.name == "BRK" &&
                          opcode.address_mode == AddressMode::kNone &&
@@ -24,9 +32,15 @@ void CPU::JumptoSubRoutine(const OPCODE &opcode) {
   NES_INSTRUCTION_ASSERT(opcode.name == "JSR" &&
                          opcode.address_mode == AddressMode::kAbsolute &&
                          opcode.cycles == 6, "JumptoSubRoutine");
+
+  uint16_t tmp = pc_;
+  NextInstruction(opcode.address_mode);  // Change pc to next instruction pos first.
+
+  // Push next instruction pos.
   PushStack(pc_ >> 8);
   PushStack(pc_ & 0xff);
 
+  pc_ = tmp;  // Make pc back for addressing.
   uint16_t new_address = Addressing(opcode.address_mode);
   pc_ = new_address;
 }

@@ -91,12 +91,12 @@ int main() {
             cartridge->program_rom_data().end(), memory.begin() + 0x8000);
 
   while (!WindowShouldClose()) {
-    // if (IsKeyPressed(KEY_D)) {
+    if (IsKeyPressed(KEY_D)) {
       for (int i = 0; i < 3; i++) {
         ppu.Tick();
       }
       cpu.Tick();
-      // }
+    }
 
     BeginDrawing();
 
