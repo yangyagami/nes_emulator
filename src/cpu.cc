@@ -10,11 +10,13 @@
 
 namespace nes {
 
-CPU::CPU(std::array<uint8_t, 65536> & memory,
-          std::function<uint8_t(PPU::Registers, bool)> ppu_access)
+CPU::CPU(std::array<uint8_t, 65536> &memory,
+         std::function<uint8_t(PPU::Registers)> ppu_read,
+         std::function<void(uint8_t, PPU::Registers)> ppu_write)
     : memory_(memory),
       cycles_(0),
-      ppu_access_(ppu_access) {
+      ppu_read_(ppu_read),
+      ppu_write_(ppu_write) {
   OnPowerUp();
 }
 

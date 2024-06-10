@@ -138,10 +138,22 @@ void CPU::AddWithCarry(const OPCODE &opcode) {
 
 void CPU::TransXToStackPointer(const OPCODE &opcode) {
   NES_INSTRUCTION_ASSERT(opcode.name == "TXS" &&
-                         opcode.address_mode == AddressMode::kNone,
+                         opcode.address_mode == AddressMode::kNone &&
+                         opcode.cycles == 2,
                          "TransXToStackPointer");
 
   s_ = x_;
+
+  NextInstruction(opcode.address_mode);
+}
+
+void CPU::TransferXToA(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "TXA" &&
+                         opcode.address_mode == AddressMode::kNone &&
+                         opcode.cycles == 2,
+                         "TransferXToA");
+
+  a_ = x_;
 
   NextInstruction(opcode.address_mode);
 }
@@ -273,6 +285,23 @@ void CPU::IncrementY(const OPCODE &opcode) {
   NextInstruction(opcode.address_mode);
 }
 
+void CPU::Increment(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "INC" &&
+                         opcode.address_mode != AddressMode::kNone,
+                         "Increment");
+
+  uint16_t new_address = Addressing(opcode.address_mode);
+  uint8_t v = Read8bit(new_address);
+  v += 1;
+  Write8bit(v, new_address);
+  if (((v & 0x80) >> 7) == 1) {
+    p.negative = 1;
+  } else if (v == 0) {
+    p.zero = 1;
+  }
+  NextInstruction(opcode.address_mode);
+}
+
 void CPU::BranchIfPositive(const OPCODE &opcode) {
   NES_INSTRUCTION_ASSERT(opcode.name == "BPL" &&
                          opcode.address_mode == AddressMode::kRelative &&
@@ -296,13 +325,21 @@ void CPU::BranchIfNotEqual(const OPCODE &opcode) {
   }
 }
 
+void CPU::Jump(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "JMP" &&
+                         opcode.address_mode != AddressMode::kNone,
+                         "Jump");
+
+  pc_ = Addressing(opcode.address_mode);
+}
+
 void CPU::StoreFromAccumulator(const OPCODE &opcode) {
   NES_INSTRUCTION_ASSERT(opcode.name == "STA" &&
                          opcode.address_mode != AddressMode::kNone,
                          "StoreFromAccumulator");
 
   uint16_t new_address = Addressing(opcode.address_mode);
-  Write8bit(new_address, a_);
+  Write8bit(a_, new_address);
 
   NextInstruction(opcode.address_mode);
 }
@@ -313,7 +350,58 @@ void CPU::StoreFromX(const OPCODE &opcode) {
                          "StoreFromX");
 
   uint16_t new_address = Addressing(opcode.address_mode);
-  Write8bit(new_address, x_);
+  Write8bit(x_, new_address);
+
+  NextInstruction(opcode.address_mode);
+}
+
+void CPU::Bit(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "BIT" &&
+                         opcode.address_mode != AddressMode::kNone,
+                         "Bit");
+  uint16_t new_address = Addressing(opcode.address_mode);
+  uint8_t v = Read8bit(new_address);
+  if ((v & a_) == 0) {
+    p.zero = 0;
+  }
+  p.negative = (v & 0b01000000) >> 6;
+  p.overflow = (v & 0b00100000) >> 5;
+
+  NextInstruction(opcode.address_mode);
+}
+
+void CPU::BitwiseORWithAccumulator(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "ORA" &&
+                         opcode.address_mode != AddressMode::kNone,
+                         "BitwiseORWithAccumulator");
+  uint16_t new_address = Addressing(opcode.address_mode);
+  uint8_t v = Read8bit(new_address);
+
+  v |= a_;
+
+  if (((v & 0x80) >> 7) == 1) {
+    p.negative = 1;
+  } else if (v == 0) {
+    p.zero = 1;
+  }
+
+  NextInstruction(opcode.address_mode);
+}
+
+void CPU::BitwiseANDWithAccumulator(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "AND" &&
+                         opcode.address_mode != AddressMode::kNone,
+                         "BitwiseANDWithAccumulator");
+
+  uint16_t new_address = Addressing(opcode.address_mode);
+  uint8_t v = Read8bit(new_address);
+
+  v &= a_;
+  if (((v & 0x80) >> 7) == 1) {
+    p.negative = 1;
+  } else if (v == 0) {
+    p.zero = 1;
+  }
 
   NextInstruction(opcode.address_mode);
 }

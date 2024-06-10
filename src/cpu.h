@@ -71,7 +71,8 @@ class CPU {
   };
 
   explicit CPU(std::array<uint8_t, 65536> &memory,
-               std::function<uint8_t(PPU::Registers, bool)> ppu_access);
+               std::function<uint8_t(PPU::Registers)> ppu_read,
+               std::function<void(uint8_t, PPU::Registers)> ppu_write);
   ~CPU();
 
   void OnPowerUp();
@@ -90,17 +91,38 @@ class CPU {
 
  private:
   inline void Write8bit(uint8_t value, uint16_t address) {
+    if (address >= 0x2000 && address <= 0x2007) {
+      // Write ppu registers.
+      HandlePPUWrite(value, address);
+      return;
+    }
     memory_[address] = value;
+  }
+
+  void HandlePPUWrite(uint8_t value, uint16_t address) {
+    switch (address) {
+      case 0x2000: {
+        return ppu_write_(value, PPU::Registers::kPPUCTRL);
+      }
+      case 0x2001: {
+        return ppu_write_(value, PPU::Registers::kPPUMASK);
+      }
+      default: {
+        std::string msg =
+            std::format("Not implementation ppu write address: {:#x}", address);
+        NES_ASSERT(false, msg);
+      }
+    }
   }
 
   uint8_t HandlePPURead(uint16_t address) {
     switch (address) {
       case 0x2002: { // PPUSTATUS
-        return ppu_access_(PPU::Registers::kPPUSTATUS, false);
+        return ppu_read_(PPU::Registers::kPPUSTATUS);
       }
       default: {
         std::string msg =
-            std::format("Not implementation ppu read address: {}", address);
+            std::format("Not implementation ppu read address: {:#x}", address);
         NES_ASSERT(false, msg);
       }
     }
@@ -157,10 +179,16 @@ class CPU {
   void Return(const OPCODE &opcode);
   void Break(const OPCODE &opcode);
   void JumptoSubRoutine(const OPCODE &opcode);
+
   void SetInterruptDisable(const OPCODE &opcode);
   void ClearDecimal(const OPCODE &opcode);
   void AddWithCarry(const OPCODE &opcode);
   void TransXToStackPointer(const OPCODE &opcode);
+  void TransferXToA(const OPCODE &opcode);
+
+  void Bit(const OPCODE &opcode);
+  void BitwiseORWithAccumulator(const OPCODE &opcode);
+  void BitwiseANDWithAccumulator(const OPCODE &opcode);
 
   void Compare(const OPCODE &opcode);
   void CompareX(const OPCODE &opcode);
@@ -178,10 +206,13 @@ class CPU {
   void BranchWhenCarryFlagSet(const OPCODE &opcode);
   void BranchIfNotEqual(const OPCODE &opcode);
 
+  void Jump(const OPCODE &opcode);
+
   void DecrementX(const OPCODE &opcode);
   void DecrementY(const OPCODE &opcode);
   void IncrementX(const OPCODE &opcode);
   void IncrementY(const OPCODE &opcode);
+  void Increment(const OPCODE &opcode);
 
   // @ADDRESS MODE
   uint16_t Addressing(AddressMode address_mode) {
@@ -298,7 +329,8 @@ class CPU {
 
   int cycles_;
 
-  std::function<uint8_t(PPU::Registers, bool)> ppu_access_;
+  std::function<uint8_t(PPU::Registers)> ppu_read_;
+  std::function<void(uint8_t, PPU::Registers)> ppu_write_;
 
 #include "opcodes_define.inl"
 };

@@ -69,8 +69,10 @@ int main() {
   std::array<uint8_t, 65536> memory = {0};
 
   nes::PPU ppu;
-  nes::CPU cpu(memory, std::bind(&nes::PPU::Access, &ppu,
-                                 std::placeholders::_1, std::placeholders::_2));
+  nes::CPU cpu(memory,
+               std::bind(&nes::PPU::Read, &ppu, std::placeholders::_1),
+               std::bind(&nes::PPU::Write, &ppu, std::placeholders::_1,
+                         std::placeholders::_2));
 
   cpu.OnPowerUp();
   cpu.OnReset();
@@ -78,7 +80,7 @@ int main() {
 
   InitWindow(1000, 600, "CPU test");
 
-  SetTargetFPS(60);
+  SetTargetFPS(240);
 
   std::shared_ptr<nes::Cartridge> cartridge =
       nes::Cartridge::LoadRom("Super Mario Bros (PC10).nes");
@@ -91,12 +93,12 @@ int main() {
             cartridge->program_rom_data().end(), memory.begin() + 0x8000);
 
   while (!WindowShouldClose()) {
-    if (IsKeyPressed(KEY_D)) {
+    // if (IsKeyPressed(KEY_D)) {
       for (int i = 0; i < 3; i++) {
         ppu.Tick();
       }
       cpu.Tick();
-    }
+    // }
 
     BeginDrawing();
 

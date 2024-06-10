@@ -9,7 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_compile_options(-Wall -Werror)
 
 # 添加可执行文件
-add_executable(cpu_test test/cpu_test.cc src/cpu.cc src/cartridge.cc)
+add_executable(cpu_test test/cpu_test.cc src/cpu.cc src/cartridge.cc src/ppu.cc)
 target_include_directories(cpu_test PRIVATE
   src
   3rdparty/raylib-5.0_linux_amd64/include)
@@ -18,7 +18,7 @@ target_link_directories(cpu_test PRIVATE
   3rdparty/raylib-5.0_linux_amd64/lib)
 target_link_libraries(cpu_test raylib -fsanitize=address)
 
-add_executable(ppu_test test/ppu_test.cc)
+add_executable(ppu_test test/ppu_test.cc src/ppu.cc)
 target_include_directories(ppu_test PRIVATE
   src
   3rdparty/raylib-5.0_linux_amd64/include)

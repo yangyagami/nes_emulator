@@ -35,55 +35,9 @@ class PPU {
   }
   ~PPU() {}
 
-  uint8_t Access(Registers reg, bool write) {
-    uint8_t ret = 0;
-    switch (reg) {
-    case Registers::kPPUSTATUS: {
-      if (!write) {
-        ret = ppu_status.raw;
-        ppu_status.vblank = 0;
-      } else {
-        NES_ASSERT(false, "PPUSTATUS register could only read!");
-      }
-      break;
-    }
-    default: {
-      std::string msg = std::format("Not implementation register access: {}",
-                                    static_cast<int>(reg));
-      NES_ASSERT(false, msg);
-      break;
-    }
-    }
-    return ret;
-  }
-
-  void Tick() {
-    bool loop_finish = false;
-    while (!loop_finish) {
-      /*
-        The VBlank flag of the PPU is set at tick 1 (the second tick) of
-        scanline 241, where the VBlank NMI also occurs. The PPU makes no memory
-        accesses during these scanlines, so PPU memory can be freely accessed by
-        the program.
-       */
-      if (cycle_ == 1 && scanline_ == 241) {
-        ppu_status.vblank = 1;
-        loop_finish = true;
-      }
-      cycle_++;
-
-      if (cycle_ >= kCycleEnd) { // One scanline finish.
-        scanline_++;
-        cycle_ = 0;
-        if (scanline_ >= kScanlineEnd) {
-          one_frame_finished_ = true;
-          scanline_ = -1;
-          cycle_ = 0;
-          break;
-        }
-      }
-    }
-  }
+  void Write(uint8_t value, Registers reg);
+  uint8_t Read(Registers reg);
+  void Tick();
 
  public:
   // PPU registers.
@@ -162,6 +116,41 @@ class PPU {
     };
     uint8_t raw;
   } ppu_status;
+
+  /*
+    Mask ($2001) > write
+    Common name: PPUMASK
+    Description: PPU mask register
+    Access: write
+    This register controls the rendering of sprites and backgrounds, as well as
+    colour effects.
+
+    7  bit  0
+    ---- ----
+    BGRs bMmG
+    |||| ||||
+    |||| |||+- Greyscale (0: normal color, 1: produce a greyscale display)
+    |||| ||+-- 1: Show background in leftmost 8 pixels of screen, 0: Hide
+    |||| |+--- 1: Show sprites in leftmost 8 pixels of screen, 0: Hide
+    |||| +---- 1: Show background
+    |||+------ 1: Show sprites
+    ||+------- Emphasize red (green on PAL/Dendy)
+    |+-------- Emphasize green (red on PAL/Dendy)
+    +--------- Emphasize blue
+  */
+  union {
+    struct {
+      uint8_t grey_scale         : 1;
+      uint8_t show_bg_in_left    : 1;
+      uint8_t show_sp_in_left    : 1;
+      uint8_t show_bg            : 1;
+      uint8_t show_sp            : 1;
+      uint8_t emphasize_red      : 1;
+      uint8_t emphasize_green    : 1;
+      uint8_t emphasize_blue     : 1;
+    };
+    uint8_t raw;
+  } ppu_mask;
 
  private:
   const int kCycleEnd = 341;
