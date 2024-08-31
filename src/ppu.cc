@@ -1,5 +1,10 @@
 #include "ppu.h"
 
+#include <iostream>
+
+#include "raylib.h"
+#include "utils.h"
+
 namespace nes {
 
 uint8_t PPU::Read(Registers reg) {
@@ -8,6 +13,7 @@ uint8_t PPU::Read(Registers reg) {
     case Registers::kPPUSTATUS: {
       ret = ppu_status.raw;
       ppu_status.vblank = 0;
+      w_ = 0;
       break;
     }
     default: {
@@ -30,6 +36,31 @@ void PPU::Write(uint8_t value, Registers reg) {
       ppu_mask.raw = value;
       break;
     }
+    case Registers::kPPUADDR: {
+      if (w_ == 0) {
+        w_ = 1;
+        vram_address_ |= value;
+        vram_address_ <<= 8;
+      } else {
+        w_ = 0;
+        vram_address_ |= value;
+      }
+      break;
+    }
+    case Registers::kPPUDATA: {
+      vram_[vram_address_++] = value;
+      break;
+    }
+    case Registers::kPPUSCROLL: {
+      if (w_ == 0) {
+        scroll_x = value;
+        w_ = 1;
+      } else {
+        scroll_y = value;
+        w_ = 0;
+      }
+      break;
+    }
     default: {
       std::string msg = std::format("Not implementation register write: {}",
                                     static_cast<int>(reg));
@@ -41,7 +72,17 @@ void PPU::Write(uint8_t value, Registers reg) {
 
 void PPU::Tick() {
   bool loop_finish = false;
+
   while (!loop_finish) {
+    // Pre-render scanline (-1 or 261)
+    if (scanline_ == -1 || scanline_ == 261) {
+      // TODO(yangsiyu):
+    }
+
+    // Visible scanlines (0-239)
+    if (scanline_ >= 0 && scanline_ <= 239) {
+      // TODO(yangsiyu): Render sth...
+    }
     /*
       The VBlank flag of the PPU is set at tick 1 (the second tick) of
       scanline 241, where the VBlank NMI also occurs. The PPU makes no memory
@@ -63,6 +104,49 @@ void PPU::Tick() {
         cycle_ = 0;
         break;
       }
+    }
+  }
+}
+
+void PPU::ShowPatterns(int x, int y) {
+  constexpr int kSize = 3;
+  int row = 0;
+  int column = 0;
+
+  for (size_t i = 0; i <= 0x1FFF; i += 16) {
+    int offset = 0;
+    for (size_t j = i; j < i+8; j++) {
+      uint8_t plane0 = vram_[j];
+      uint8_t plane1 = vram_[j + 8];
+
+      for (int bit_pos = 7; bit_pos >= 0; bit_pos--) {
+        uint8_t plane0_cur_bit = (plane0 & (1 << bit_pos)) >> bit_pos;
+        uint8_t plane1_cur_bit = (plane1 & (1 << bit_pos)) >> bit_pos;
+        uint8_t color_idx = plane0_cur_bit + plane1_cur_bit * 2;
+        auto color = BLACK;
+        switch (color_idx) {
+          case 1: {
+            color = DARKBLUE;
+            break;
+          }
+          case 2: {
+            color = RED;
+            break;
+          }
+          case 3: {
+            color = WHITE;
+            break;
+          }
+        }
+        DrawRectangle(x + (column * 8 + 7 - bit_pos) * kSize,
+                      y + (row * 8 + offset) * kSize, kSize, kSize, color);
+      }
+      offset++;
+    }
+    column++;
+    if (column % 16 == 0) {
+      row++;
+      column = 0;
     }
   }
 }

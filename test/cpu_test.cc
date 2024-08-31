@@ -76,11 +76,10 @@ int main() {
 
   cpu.OnPowerUp();
   cpu.OnReset();
-  cpu.OnCartridgeInsert();
 
-  InitWindow(1000, 600, "CPU test");
+  InitWindow(1600, 960, "CPU test");
 
-  SetTargetFPS(240);
+  SetTargetFPS(60);
 
   std::shared_ptr<nes::Cartridge> cartridge =
       nes::Cartridge::LoadRom("Super Mario Bros (PC10).nes");
@@ -89,8 +88,8 @@ int main() {
     return 1;
   }
 
-  std::copy(cartridge->program_rom_data().begin(),
-            cartridge->program_rom_data().end(), memory.begin() + 0x8000);
+  cpu.OnCartridgeInsert(cartridge);
+  ppu.OnCartridgeInsert(cartridge);
 
   while (!WindowShouldClose()) {
     // if (IsKeyPressed(KEY_D)) {
@@ -98,50 +97,14 @@ int main() {
         ppu.Tick();
       }
       cpu.Tick();
-    // }
+      // }
 
     BeginDrawing();
 
     ClearBackground(RAYWHITE);
 
-    // int y = 0;
-    // for (size_t j = 0; j < 16 * 30; j += 16) {
-    //   for (size_t i = j; i < j + 8; i++) {
-    //     uint8_t plane0 = cartridge->chr_rom_data()[i];
-    //     uint8_t plane1 = cartridge->chr_rom_data()[i + 8];
+    ppu.ShowPatterns(1200, 20);
 
-    //     int size = 5;
-
-    //     if (i % 8 == 0) {
-    //       y = (j / (16 * 16)) * size * 8;
-    //       std::cout << y << std::endl;
-    //     }
-
-    //     for (int bit_pos = 7; bit_pos >= 0; bit_pos--) {
-    //       uint8_t plane0_cur_bit = (plane0 & (1 << bit_pos)) >> bit_pos;
-    //       uint8_t plane1_cur_bit = (plane1 & (1 << bit_pos)) >> bit_pos;
-    //       uint8_t color_idx = plane0_cur_bit + plane1_cur_bit * 2;
-    //       auto color = BLACK;
-    //       switch (color_idx) {
-    //       case 1: {
-    //         color = DARKBLUE;
-    //         break;
-    //       }
-    //       case 2: {
-    //         color = RED;
-    //         break;
-    //       }
-    //       case 3: {
-    //         color = WHITE;
-    //         break;
-    //       }
-    //       }
-    //       DrawRectangle((j / 16) * 8 * size + (7 - bit_pos) * size, y, size,
-    //                     size, color);
-    //     }
-    //     y += size;
-    //   }
-    // }
 
     DebugCPU(cpu);
     // DebugMemory(memory, 0x8000);

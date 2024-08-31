@@ -77,8 +77,10 @@ class CPU {
 
   void OnPowerUp();
   void OnReset();
-  void OnCartridgeInsert() {
-    pc_ = 0x8000;
+  void OnCartridgeInsert(std::shared_ptr<Cartridge> cartridge) {
+    std::copy(cartridge->program_rom_data().begin(),
+              cartridge->program_rom_data().end(), memory_.begin() + 0x8000);
+    pc_ = Read16bit(0xFFFC);
   }
 
   void Tick();
@@ -106,6 +108,15 @@ class CPU {
       }
       case 0x2001: {
         return ppu_write_(value, PPU::Registers::kPPUMASK);
+      }
+      case 0x2005: {
+        return ppu_write_(value, PPU::Registers::kPPUSCROLL);
+      }
+      case 0x2006: {
+        return ppu_write_(value, PPU::Registers::kPPUADDR);
+      }
+      case 0x2007: {
+        return ppu_write_(value, PPU::Registers::kPPUDATA);
       }
       default: {
         std::string msg =
@@ -200,14 +211,16 @@ class CPU {
 
   void StoreFromAccumulator(const OPCODE &opcode);
   void StoreFromX(const OPCODE &opcode);
-  // void StoreFromY(const OPCODE &opcode);
+  void StoreFromY(const OPCODE &opcode);
 
   void BranchIfPositive(const OPCODE &opcode);
   void BranchWhenCarryFlagSet(const OPCODE &opcode);
   void BranchIfNotEqual(const OPCODE &opcode);
+  void BranchIfEqual(const OPCODE &opcode);
 
   void Jump(const OPCODE &opcode);
 
+  void Decrement(const OPCODE &opcode);
   void DecrementX(const OPCODE &opcode);
   void DecrementY(const OPCODE &opcode);
   void IncrementX(const OPCODE &opcode);

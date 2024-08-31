@@ -1,6 +1,7 @@
 #ifndef NES_EMULATOR_PPU_H_
 #define NES_EMULATOR_PPU_H_
 
+#include <memory>
 #include <stdint.h>
 
 #include <array>
@@ -9,6 +10,7 @@
 
 #include "raylib.h"
 #include "utils.h"
+#include "cartridge.h"
 
 namespace nes {
 
@@ -27,9 +29,13 @@ class PPU {
   };
 
   explicit PPU()
-      : scanline_(-1),
+      : w_(0),
+        scroll_x(0),
+        scroll_y(0),
+        scanline_(-1),
         cycle_(0),
-        one_frame_finished_(false) {
+        one_frame_finished_(false),
+        vram_address_(0) {
     ppu_ctrl.raw = 0;
     ppu_status.raw = 0;
   }
@@ -39,7 +45,16 @@ class PPU {
   uint8_t Read(Registers reg);
   void Tick();
 
+  void OnCartridgeInsert(std::shared_ptr<Cartridge> cartridge) {
+    std::copy(cartridge->chr_rom_data().begin(),
+              cartridge->chr_rom_data().end(), vram_.begin());
+  }
+
+  void ShowPatterns(int x, int y);
+
  public:
+  uint8_t w_;
+
   // PPU registers.
   /*
   Controller ($2000) > write
@@ -152,6 +167,9 @@ class PPU {
     uint8_t raw;
   } ppu_mask;
 
+  uint8_t scroll_x;
+  uint8_t scroll_y;
+
  private:
   const int kCycleEnd = 341;
   const int kScanlineEnd = 262;
@@ -160,6 +178,9 @@ class PPU {
   int cycle_;
 
   bool one_frame_finished_;
+
+  std::array<uint8_t, 0x4000> vram_;
+  uint16_t vram_address_;
 };
 
 } // namespace nes

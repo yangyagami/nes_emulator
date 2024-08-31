@@ -16,6 +16,7 @@ class Cartridge {
 
   const std::vector<uint8_t> &program_rom_data() { return program_rom_data_; }
   const std::vector<uint8_t> &chr_rom_data() { return chr_rom_data_; }
+
  private:
   union {
     struct {
@@ -68,6 +69,7 @@ bits of the mapper number or simply refuse to load the ROM.
   std::array<uint8_t, 512> trainer_;
   std::vector<uint8_t> program_rom_data_;
   std::vector<uint8_t> chr_rom_data_;
+
 };
 
 }  // namespace nes

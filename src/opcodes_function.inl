@@ -227,6 +227,24 @@ void CPU::BranchWhenCarryFlagSet(const OPCODE &opcode) {
   }
 }
 
+void CPU::Decrement(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "DEC" &&
+                         opcode.address_mode != AddressMode::kNone,
+                         "Decrement");
+
+  uint16_t new_address = Addressing(opcode.address_mode);
+  int16_t v = Read8bit(new_address);
+  int16_t result = v - 1;
+  if (result == 0) {
+    p.zero = 1;
+  }
+  if (result < 0) {
+    p.negative = 1;
+  }
+
+  NextInstruction(opcode.address_mode);
+}
+
 void CPU::DecrementX(const OPCODE &opcode) {
   NES_INSTRUCTION_ASSERT(opcode.name == "DEX" &&
                          opcode.address_mode == AddressMode::kNone &&
@@ -325,6 +343,18 @@ void CPU::BranchIfNotEqual(const OPCODE &opcode) {
   }
 }
 
+void CPU::BranchIfEqual(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "BEQ" &&
+                         opcode.address_mode == AddressMode::kRelative &&
+                         opcode.cycles == 2, "BranchIfEqual");
+
+  if (p.zero == 1) {
+    pc_ = Addressing(opcode.address_mode);
+  } else {
+    NextInstruction(opcode.address_mode);
+  }
+}
+
 void CPU::Jump(const OPCODE &opcode) {
   NES_INSTRUCTION_ASSERT(opcode.name == "JMP" &&
                          opcode.address_mode != AddressMode::kNone,
@@ -351,6 +381,17 @@ void CPU::StoreFromX(const OPCODE &opcode) {
 
   uint16_t new_address = Addressing(opcode.address_mode);
   Write8bit(x_, new_address);
+
+  NextInstruction(opcode.address_mode);
+}
+
+void CPU::StoreFromY(const OPCODE &opcode) {
+  NES_INSTRUCTION_ASSERT(opcode.name == "STY" &&
+                         opcode.address_mode != AddressMode::kNone,
+                         "StoreFromY");
+
+  uint16_t new_address = Addressing(opcode.address_mode);
+  Write8bit(y_, new_address);
 
   NextInstruction(opcode.address_mode);
 }
