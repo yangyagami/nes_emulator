@@ -71,39 +71,39 @@ void PPU::Write(uint8_t value, Registers reg) {
 }
 
 void PPU::Tick() {
-  bool loop_finish = false;
+  // Pre-render scanline (-1 or 261)
+  if (scanline_ == -1 || scanline_ == 261) {
+    // TODO(yangsiyu):
+    one_frame_finished_ = false;
+  }
 
-  while (!loop_finish) {
-    // Pre-render scanline (-1 or 261)
-    if (scanline_ == -1 || scanline_ == 261) {
-      // TODO(yangsiyu):
-    }
+  // Visible scanlines (0-239)
+  if (scanline_ >= 0 && scanline_ <= 239) {
+    // TODO(yangsiyu): Render sth...
+  }
+  /*
+    The VBlank flag of the PPU is set at tick 1 (the second tick) of
+    scanline 241, where the VBlank NMI also occurs. The PPU makes no memory
+    accesses during these scanlines, so PPU memory can be freely accessed by
+    the program.
+  */
+  if (cycle_ == 1 && scanline_ == 241) {
+    ppu_status.vblank = 1;
 
-    // Visible scanlines (0-239)
-    if (scanline_ >= 0 && scanline_ <= 239) {
-      // TODO(yangsiyu): Render sth...
+    if (ppu_ctrl.vblank) {
+      nmi_request_ = true;
     }
-    /*
-      The VBlank flag of the PPU is set at tick 1 (the second tick) of
-      scanline 241, where the VBlank NMI also occurs. The PPU makes no memory
-      accesses during these scanlines, so PPU memory can be freely accessed by
-      the program.
-     */
-    if (cycle_ == 1 && scanline_ == 241) {
-      ppu_status.vblank = 1;
-      loop_finish = true;
-    }
-    cycle_++;
+  }
 
-    if (cycle_ >= kCycleEnd) { // One scanline finish.
-      scanline_++;
+  cycle_++;
+
+  if (cycle_ >= kCycleEnd) { // One scanline finish.
+    scanline_++;
+    cycle_ = 0;
+    if (scanline_ >= kScanlineEnd) {
+      one_frame_finished_ = true;
+      scanline_ = -1;
       cycle_ = 0;
-      if (scanline_ >= kScanlineEnd) {
-        one_frame_finished_ = true;
-        scanline_ = -1;
-        cycle_ = 0;
-        break;
-      }
     }
   }
 }

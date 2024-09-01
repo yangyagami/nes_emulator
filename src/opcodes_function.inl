@@ -418,9 +418,9 @@ void CPU::BitwiseORWithAccumulator(const OPCODE &opcode) {
   uint16_t new_address = Addressing(opcode.address_mode);
   uint8_t v = Read8bit(new_address);
 
-  v |= a_;
+  a_ |= v;
 
-  if (((v & 0x80) >> 7) == 1) {
+  if (((a_ & 0x80) >> 7) == 1) {
     p.negative = 1;
   } else if (v == 0) {
     p.zero = 1;
@@ -437,8 +437,8 @@ void CPU::BitwiseANDWithAccumulator(const OPCODE &opcode) {
   uint16_t new_address = Addressing(opcode.address_mode);
   uint8_t v = Read8bit(new_address);
 
-  v &= a_;
-  if (((v & 0x80) >> 7) == 1) {
+  a_ &= v;
+  if (((a_ & 0x80) >> 7) == 1) {
     p.negative = 1;
   } else if (v == 0) {
     p.zero = 1;

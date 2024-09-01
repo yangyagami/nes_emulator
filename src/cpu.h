@@ -85,6 +85,8 @@ class CPU {
 
   void Tick();
 
+  void NMI();
+
   uint8_t a() { return a_; }
   uint8_t x() { return x_; }
   uint8_t y() { return y_; }
@@ -337,6 +339,8 @@ class CPU {
   uint8_t y_;
   uint16_t pc_;
   uint8_t s_;
+
+  OPCODE opcode_;
 
   std::array<uint8_t, 65536> &memory_;
 

@@ -40,11 +40,15 @@ void CPU::Tick() {
   cycles_ = 0;
 
   uint8_t opcode = Read8bit(pc_);
+
   // Map opcode to function
   NES_ASSERT(opcodes_.find(opcode) != opcodes_.end(),
              std::format("No such opcode: {:#x}", opcode));
 
   OPCODE opcode_obj = opcodes_[opcode];
+
+  // TODO(yangsiyu): Refactor...
+  opcode_ = opcode_obj;  // Copy for NMI handler.
 
   NES_ASSERT(opcode_functions_.find(opcode_obj.name) != opcode_functions_.end(),
              std::format("No implementation opcode: {}", opcode_obj.name));
@@ -56,6 +60,16 @@ void CPU::Tick() {
   cycles_ += opcode_obj.cycles;
 
   while (cycles_-- > 0);
+}
+
+void CPU::NMI() {
+  NextInstruction(opcode_.address_mode);  // Change pc to next instruction pos first.
+
+  // Push next instruction pos.
+  PushStack(pc_ >> 8);
+  PushStack(pc_ & 0xff);
+
+  pc_ = Read16bit(0xFFFA);
 }
 
 void CPU::PushStack(uint8_t value) {

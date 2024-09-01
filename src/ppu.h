@@ -35,11 +35,14 @@ class PPU {
         scanline_(-1),
         cycle_(0),
         one_frame_finished_(false),
+        nmi_request_(false),
         vram_address_(0) {
     ppu_ctrl.raw = 0;
     ppu_status.raw = 0;
   }
   ~PPU() {}
+
+  bool one_frame_finished() const { return one_frame_finished_; }
 
   void Write(uint8_t value, Registers reg);
   uint8_t Read(Registers reg);
@@ -51,6 +54,16 @@ class PPU {
   }
 
   void ShowPatterns(int x, int y);
+
+  bool nmi_request() {
+    bool ret = nmi_request_;
+
+    if (ret) {
+      nmi_request_ = false;
+    }
+
+    return ret;
+  }
 
  public:
   uint8_t w_;
@@ -178,6 +191,8 @@ class PPU {
   int cycle_;
 
   bool one_frame_finished_;
+
+  bool nmi_request_;
 
   std::array<uint8_t, 0x4000> vram_;
   uint16_t vram_address_;

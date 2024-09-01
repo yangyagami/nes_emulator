@@ -79,7 +79,7 @@ int main() {
 
   InitWindow(1600, 960, "CPU test");
 
-  SetTargetFPS(60);
+  // SetTargetFPS(60);
 
   std::shared_ptr<nes::Cartridge> cartridge =
       nes::Cartridge::LoadRom("Super Mario Bros (PC10).nes");
@@ -91,13 +91,31 @@ int main() {
   cpu.OnCartridgeInsert(cartridge);
   ppu.OnCartridgeInsert(cartridge);
 
-  while (!WindowShouldClose()) {
-    // if (IsKeyPressed(KEY_D)) {
-      for (int i = 0; i < 3; i++) {
-        ppu.Tick();
+  bool single_step = true;
+
+  auto execute = [&](){
+    for (int i = 0; i < 3; i++) {
+      ppu.Tick();
+      if (ppu.nmi_request()) {
+        cpu.NMI();
       }
-      cpu.Tick();
-      // }
+    }
+
+    cpu.Tick();
+  };
+
+  while (!WindowShouldClose()) {
+    if (!single_step) {
+      do {
+        execute();
+      } while (!ppu.one_frame_finished());
+    } else if (IsKeyPressed(KEY_D)) {
+      execute();
+    }
+
+    if (IsKeyPressed(KEY_C)) {
+      single_step = !single_step;
+    }
 
     BeginDrawing();
 
