@@ -111,6 +111,9 @@ class CPU {
       case 0x2001: {
         return ppu_write_(value, PPU::Registers::kPPUMASK);
       }
+      case 0x2003: {
+        return ppu_write_(value, PPU::Registers::kOAMADDR);
+      }
       case 0x2005: {
         return ppu_write_(value, PPU::Registers::kPPUSCROLL);
       }

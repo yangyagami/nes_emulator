@@ -61,6 +61,11 @@ void PPU::Write(uint8_t value, Registers reg) {
       }
       break;
     }
+    case Registers::kOAMADDR: {
+      // TODO(yangsiyu): Full future implementation.
+      oamaddr = value;
+      break;
+    }
     default: {
       std::string msg = std::format("Not implementation register write: {}",
                                     static_cast<int>(reg));

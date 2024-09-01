@@ -107,6 +107,41 @@ class PPU {
   } ppu_ctrl;
 
   /*
+    Mask ($2001) > write
+    Common name: PPUMASK
+    Description: PPU mask register
+    Access: write
+    This register controls the rendering of sprites and backgrounds, as well as
+    colour effects.
+
+    7  bit  0
+    ---- ----
+    BGRs bMmG
+    |||| ||||
+    |||| |||+- Greyscale (0: normal color, 1: produce a greyscale display)
+    |||| ||+-- 1: Show background in leftmost 8 pixels of screen, 0: Hide
+    |||| |+--- 1: Show sprites in leftmost 8 pixels of screen, 0: Hide
+    |||| +---- 1: Show background
+    |||+------ 1: Show sprites
+    ||+------- Emphasize red (green on PAL/Dendy)
+    |+-------- Emphasize green (red on PAL/Dendy)
+    +--------- Emphasize blue
+  */
+  union {
+    struct {
+      uint8_t grey_scale         : 1;
+      uint8_t show_bg_in_left    : 1;
+      uint8_t show_sp_in_left    : 1;
+      uint8_t show_bg            : 1;
+      uint8_t show_sp            : 1;
+      uint8_t emphasize_red      : 1;
+      uint8_t emphasize_green    : 1;
+      uint8_t emphasize_blue     : 1;
+    };
+    uint8_t raw;
+  } ppu_mask;
+
+    /*
      Status ($2002) < read
      Common name: PPUSTATUS
      Description: PPU status register
@@ -145,40 +180,7 @@ class PPU {
     uint8_t raw;
   } ppu_status;
 
-  /*
-    Mask ($2001) > write
-    Common name: PPUMASK
-    Description: PPU mask register
-    Access: write
-    This register controls the rendering of sprites and backgrounds, as well as
-    colour effects.
-
-    7  bit  0
-    ---- ----
-    BGRs bMmG
-    |||| ||||
-    |||| |||+- Greyscale (0: normal color, 1: produce a greyscale display)
-    |||| ||+-- 1: Show background in leftmost 8 pixels of screen, 0: Hide
-    |||| |+--- 1: Show sprites in leftmost 8 pixels of screen, 0: Hide
-    |||| +---- 1: Show background
-    |||+------ 1: Show sprites
-    ||+------- Emphasize red (green on PAL/Dendy)
-    |+-------- Emphasize green (red on PAL/Dendy)
-    +--------- Emphasize blue
-  */
-  union {
-    struct {
-      uint8_t grey_scale         : 1;
-      uint8_t show_bg_in_left    : 1;
-      uint8_t show_sp_in_left    : 1;
-      uint8_t show_bg            : 1;
-      uint8_t show_sp            : 1;
-      uint8_t emphasize_red      : 1;
-      uint8_t emphasize_green    : 1;
-      uint8_t emphasize_blue     : 1;
-    };
-    uint8_t raw;
-  } ppu_mask;
+  uint8_t oamaddr;
 
   uint8_t scroll_x;
   uint8_t scroll_y;
